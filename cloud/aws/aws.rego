@@ -1,4 +1,4 @@
-package rules.cloud.aws
+package cloud.aws
 
 validate {
   input.key == "value"
