@@ -1,0 +1,34 @@
+name: Validate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  opa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install OPA
+        run: curl -L -o opa https://github.com/open-policy-agent/opa/releases/latest/download/opa_linux_amd64 && chmod 755 opa
+      - name: Start OPA
+        run: opa eval -d policy.rego -i input.json "data.rules.validate" --fail
+
+  styra:
+    runs-on: ubuntu-latest
+    env:
+      SYSTEM_TOKEN: ${{ secrets.SYSTEM_TOKEN }}
+      TENANT: ${{ secrets.TENANT }}
+      SYSTEM: ${{ secrets.SYSTEM }}
+      API_TOKEN: ${{ secrets.API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install OPA
+        run: "curl -H \"Authorization: Bearer $API_TOKEN\" -o styra \"https://$TENANT.styra.com/v1/docs/bin/linux/amd64/styra\"" && chmod 755 styra
+      - name: Fetch OPA Config
+        run: "curl -H \"Authorization: Bearer $SYSTEM_TOKEN\" -L -o opa-conf.yaml \"https://$TENANT.styra.com/v1/systems/$SYSTEM/assets/opa-config\""
+      - name: Start OPA
+        run: opa run --server --config-file=opa-conf.yaml
